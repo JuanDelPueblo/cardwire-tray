@@ -1,7 +1,7 @@
 use futures_util::StreamExt;
 use ksni::{Tray, TrayMethods};
 use rfd::MessageDialog;
-use std::{collections::HashMap, fs, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use tokio::sync::mpsc;
 use zbus::{Connection, proxy};
 
@@ -22,6 +22,9 @@ trait Cardwire {
     /// SetGpuBlock method
     fn set_gpu_block(&self, gpu_id: u32, block: bool) -> zbus::Result<()>;
 
+    /// GetStatus method
+    fn get_status(&self, gpu_id: u32) -> zbus::Result<String>;
+
     /// ListDevices method
     fn list_devices(
         &self,
@@ -32,9 +35,9 @@ trait Cardwire {
 struct GpuInfo {
     id: u32,
     name: String,
-    card: u32,
     is_default: bool,
     blocked: bool,
+    power_state: String,
 }
 
 struct CardwireTray {
@@ -112,19 +115,11 @@ impl Tray for CardwireTray {
         let mut tooltip_text = String::from("Name | Power state | Default | Blocked");
 
         for gpu in &self.gpus {
-            let power_state = fs::read_to_string(format!(
-                "/sys/class/drm/card{}/device/power_state",
-                gpu.card
-            ))
-            .unwrap_or_else(|_| "unknown".to_string())
-            .trim()
-            .to_string();
-
             let default_str = if gpu.is_default { "✅" } else { "❌" };
             let gpu_blocked_str = if gpu.blocked { "✅" } else { "❌" };
             tooltip_text.push_str(&format!(
                 "\n{} | {} | {} | {}",
-                gpu.name, power_state, default_str, gpu_blocked_str
+                gpu.name, gpu.power_state, default_str, gpu_blocked_str
             ));
         }
 
@@ -295,12 +290,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut gpus = Vec::new();
     if let Ok(devs) = proxy.list_devices().await {
         for (_, (id, name, _, _, card, is_default, blocked, _, _)) in devs {
+            let power_state = proxy
+                .get_status(card)
+                .await
+                .unwrap_or_else(|_| "Unknown".to_string());
             gpus.push(GpuInfo {
                 id,
                 name,
-                card,
                 is_default,
                 blocked,
+                power_state,
             });
         }
         gpus.sort_by_key(|g| g.id);
@@ -357,12 +356,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Ok(devs) = proxy_clone.list_devices().await {
                         let mut new_gpus = Vec::new();
                         for (_, (id, name, _, _, card, is_default, blocked, _, _)) in devs {
+                                let power_state = proxy_clone
+                                    .get_status(card)
+                                    .await
+                                    .unwrap_or_else(|_| "Unknown".to_string());
                             new_gpus.push(GpuInfo {
                                 id,
                                 name,
-                                card,
                                 is_default,
                                 blocked,
+                                power_state,
                             });
                         }
                         new_gpus.sort_by_key(|g| g.id);
