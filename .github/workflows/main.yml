@@ -1,0 +1,19 @@
+on:
+  push:
+    branches: [master]
+  pull_request:
+name: CI
+jobs:
+  flatpak:
+    name: "Cardwire Tray Flatpak"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-48
+      options: --privileged
+    steps:
+    - uses: actions/checkout@v4
+    - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      with:
+        bundle: me.edyan.cardwiretray
+        manifest-path: me.edyan.cardwiretray.yml
+        cache-key: cardwire-tray-${{ github.sha }}
