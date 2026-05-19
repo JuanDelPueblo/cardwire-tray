@@ -1,0 +1,11 @@
+/home/ed/Projects/cardwire-tray-icon/target/release/deps/ordered_stream-80f9e1a3cae69066.d: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/adapters.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/join.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/multi.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/../README.md
+
+/home/ed/Projects/cardwire-tray-icon/target/release/deps/libordered_stream-80f9e1a3cae69066.rlib: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/adapters.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/join.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/multi.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/../README.md
+
+/home/ed/Projects/cardwire-tray-icon/target/release/deps/libordered_stream-80f9e1a3cae69066.rmeta: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/adapters.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/join.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/multi.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/../README.md
+
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/lib.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/adapters.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/join.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/multi.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ordered-stream-0.2.0/src/../README.md:

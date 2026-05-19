@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["TrayAction"],"fn":["get_connection","main"],"struct":["CardwireProxy","CardwireProxyBlocking","CardwireTray","GpuInfo"]};

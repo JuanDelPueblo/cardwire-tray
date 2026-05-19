@@ -1,0 +1,11 @@
+/home/ed/Projects/cardwire-tray-icon/target/debug/deps/quote-9ae930dc632fa6f2.d: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/ext.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/format.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/ident_fragment.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/to_tokens.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/runtime.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/spanned.rs
+
+/home/ed/Projects/cardwire-tray-icon/target/debug/deps/libquote-9ae930dc632fa6f2.rmeta: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/ext.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/format.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/ident_fragment.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/to_tokens.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/runtime.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/spanned.rs
+
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/lib.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/ext.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/format.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/ident_fragment.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/to_tokens.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/runtime.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/quote-1.0.45/src/spanned.rs:

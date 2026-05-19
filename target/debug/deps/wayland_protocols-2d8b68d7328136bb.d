@@ -1,0 +1,10 @@
+/home/ed/Projects/cardwire-tray-icon/target/debug/deps/wayland_protocols-2d8b68d7328136bb.d: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/protocol_macro.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/ext.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/wp.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/xdg.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/xwayland.rs
+
+/home/ed/Projects/cardwire-tray-icon/target/debug/deps/libwayland_protocols-2d8b68d7328136bb.rmeta: /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/lib.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/protocol_macro.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/ext.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/wp.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/xdg.rs /home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/xwayland.rs
+
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/lib.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/protocol_macro.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/ext.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/wp.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/xdg.rs:
+/home/ed/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/wayland-protocols-0.32.12/src/xwayland.rs:
