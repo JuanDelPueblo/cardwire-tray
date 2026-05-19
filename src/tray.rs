@@ -71,6 +71,15 @@ impl Tray for CardwireTray {
             ));
         }
 
+        if let Some(latest) = &self.latest_version {
+            if latest != &self.current_version {
+                tooltip_text.push_str(&format!(
+                    "\n\nUpdate available: {} (current: {})",
+                    latest, self.current_version
+                ));
+            }
+        }
+
         ksni::ToolTip {
             title: "Cardwire GPUs".to_string(),
             description: tooltip_text,

@@ -9,7 +9,8 @@ use ksni::TrayMethods;
 use models::{CardwireTray, TrayAction};
 use std::time::Duration;
 use tokio::sync::mpsc;
-use utils::get_gpus;
+use tokio::time::MissedTickBehavior;
+use utils::{get_gpus, get_latest_version};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,11 +21,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let gpus = get_gpus(&proxy).await;
 
+    let latest_version = get_latest_version().await;
+
     let (action_tx, mut action_rx) = mpsc::channel(10);
     let tray = CardwireTray {
         mode: initial_mode,
         gpus,
         action_tx,
+        current_version: format!("v{}", env!("CARGO_PKG_VERSION").to_string()),
+        latest_version,
     };
 
     let tray_handle = tray.spawn().await.expect("Failed to spawn tray");
@@ -35,6 +40,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let handle_clone = tray_handle.clone();
 
     tokio::spawn(async move {
+        let mut version_refresh = tokio::time::interval(Duration::from_secs(60 * 60 * 24));
+        version_refresh.set_missed_tick_behavior(MissedTickBehavior::Skip);
+        version_refresh.tick().await;
+
         loop {
             tokio::select! {
                 Some(changed) = mode_stream.next() => {
@@ -72,6 +81,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let _ = handle_clone.update(|tray: &mut CardwireTray| {
                         tray.gpus = new_gpus;
                     }).await;
+                }
+                _ = version_refresh.tick() => {
+                    if let Some(latest_version) = get_latest_version().await {
+                        let _ = handle_clone.update(|tray: &mut CardwireTray| {
+                            tray.latest_version = Some(latest_version);
+                        }).await;
+                    }
                 }
             }
         }

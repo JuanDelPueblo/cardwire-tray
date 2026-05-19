@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use serde::Deserialize;
 use tokio::sync::mpsc;
 use zbus::proxy;
 
@@ -42,6 +43,8 @@ pub struct CardwireTray {
     pub mode: u32,
     pub gpus: Vec<GpuInfo>,
     pub action_tx: mpsc::Sender<TrayAction>,
+    pub current_version: String,
+    pub latest_version: Option<String>,
 }
 
 pub enum TrayAction {
@@ -49,4 +52,9 @@ pub enum TrayAction {
     ToggleGpuBlock(u32, bool),
     Notify(String, String),
     Quit,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GitHubRelease {
+    pub tag_name: String,
 }
