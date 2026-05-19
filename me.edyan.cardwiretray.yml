@@ -30,6 +30,7 @@ modules:
     build-commands:
       - cargo build --release
       - make install DESTDIR="" PREFIX=/app
+      - install -Dm644 me.edyan.cardwiretray.metainfo.xml /app/share/metainfo/me.edyan.cardwiretray.metainfo.xml
     sources:
       - type: dir
         path: .

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>me.edyan.cardwiretray</id>
+
+  <name>Cardwire Tray</name>
+  <summary>Tray application for Cardwire</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>An universal tray applet for [Cardwire](https://github.com/OpenGamingCollective/cardwire) GPU manager.</p>
+  </description>
+
+    <url type="homepage">https://github.com/JuanDelPueblo/cardwire-tray</url>
+
+  <launchable type="desktop-id">me.edyan.cardwiretray.desktop</launchable>
+
+  <categories>
+    <category>Utility</category>
+  </categories>
+</component>
