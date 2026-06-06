@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<!-- GPU base -->
+	<rect x="32" y="32" width="192" height="192" rx="16" stroke="#4A5568" stroke-width="16"
+		fill="#2D3748" />
+	<rect x="72" y="72" width="112" height="112" rx="8" fill="#4A5568" />
+	<!-- Smart color -->
+	<circle cx="128" cy="128" r="48" fill="#00A6D6" />
+	<!-- Pins -->
+	<path d="M64 32v-16m32 16v-16m32 16v-16m32 16v-16m32 16v-16" stroke="#4A5568" stroke-width="8"
+		stroke-linecap="round" />
+	<path d="M64 224v16m32-16v16m32-16v16m32-16v16m32-16v16" stroke="#4A5568" stroke-width="8"
+		stroke-linecap="round" />
+	<path d="M32 64h-16m16 32h-16m16 32h-16m16 32h-16m16 32h-16" stroke="#4A5568" stroke-width="8"
+		stroke-linecap="round" />
+	<path d="M224 64h16m-16 32h16m-16 32h16m-16 32h16m-16 32h16" stroke="#4A5568" stroke-width="8"
+		stroke-linecap="round" />
+</svg>

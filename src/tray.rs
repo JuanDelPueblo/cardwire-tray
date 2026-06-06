@@ -11,6 +11,7 @@ impl Tray for CardwireTray {
             0 => "integrated",
             1 => "hybrid",
             2 => "manual",
+            3 => "smart",
             _ => return "preferences-system-windows".to_string(),
         };
 
@@ -119,9 +120,14 @@ impl Tray for CardwireTray {
                 icon_name: get_icon("manual"),
                 ..Default::default()
             },
+            ksni::menu::RadioItem {
+                label: "Smart Mode".to_string(),
+                icon_name: get_icon("smart"),
+                ..Default::default()
+            },
         ];
 
-        let selected_mode_index = if self.mode <= 2 {
+        let selected_mode_index = if self.mode <= 3 {
             self.mode as usize
         } else {
             0
