@@ -1,4 +1,4 @@
-use crate::models::{CardwireTray, TrayAction};
+use crate::models::{CardwireTray, ConfigKey, TrayAction};
 use ksni::Tray;
 
 impl Tray for CardwireTray {
@@ -175,6 +175,41 @@ impl Tray for CardwireTray {
                 }));
             }
         }
+
+        items.push(ksni::MenuItem::Separator);
+
+        let config_options = [
+            ("Auto-apply GPU state", ConfigKey::AutoApplyGpuState),
+            ("Battery auto-switch", ConfigKey::BatteryAutoSwitch),
+            (
+                "Experimental NVIDIA block",
+                ConfigKey::ExperimentalNvidiaBlock,
+            ),
+        ];
+
+        let config_items = config_options
+            .into_iter()
+            .map(|(label, key)| {
+                let enabled = self.config.get(key);
+                ksni::MenuItem::Checkmark(ksni::menu::CheckmarkItem {
+                    label: label.to_string(),
+                    checked: enabled,
+                    activate: Box::new(move |this: &mut Self| {
+                        let _ = this
+                            .action_tx
+                            .try_send(TrayAction::SetConfig(key, !enabled));
+                    }),
+                    ..Default::default()
+                })
+            })
+            .collect();
+
+        items.push(ksni::MenuItem::SubMenu(ksni::menu::SubMenu {
+            label: "Config".to_string(),
+            icon_name: "preferences-system".into(),
+            submenu: config_items,
+            ..Default::default()
+        }));
 
         items.push(ksni::MenuItem::Separator);
 

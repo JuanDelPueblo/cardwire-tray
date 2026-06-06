@@ -3,30 +3,60 @@ mod models;
 mod tray;
 mod utils;
 
-use dbus::get_proxy;
+use dbus::get_client;
 use futures_util::StreamExt;
 use ksni::TrayMethods;
-use models::{CardwireTray, TrayAction};
-use std::time::Duration;
+use models::{CardwireClient, CardwireTray, PowerStateChangedArgs, TrayAction};
+use std::{collections::HashSet, time::Duration};
 use tokio::sync::mpsc;
 use tokio::time::MissedTickBehavior;
 use utils::{get_gpus, get_latest_version};
 
+fn spawn_power_state_listener(
+    client: CardwireClient,
+    gpu_id: u32,
+    power_tx: mpsc::Sender<(u32, String)>,
+) {
+    tokio::spawn(async move {
+        let Ok(gpu) = client.gpu_proxy(gpu_id).await else {
+            return;
+        };
+        let Ok(mut stream) = gpu.receive_power_state_changed().await else {
+            return;
+        };
+
+        while let Some(signal) = stream.next().await {
+            let args: PowerStateChangedArgs = match signal.args() {
+                Ok(args) => args,
+                Err(_) => continue,
+            };
+
+            if power_tx.send((gpu_id, args.state)).await.is_err() {
+                break;
+            }
+        }
+    });
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Retry loop for the specific service proxy
-    let proxy = get_proxy().await;
+    // Retry loop for the Cardwire service.
+    let client = get_client().await;
+    let mode_proxy = client.mode_proxy().await?;
 
-    let initial_mode = proxy.mode().await.unwrap_or(0);
+    let initial_mode = mode_proxy.mode().await.unwrap_or(0);
 
-    let gpus = get_gpus(&proxy).await;
+    let gpus = get_gpus(&client).await;
+    let initial_gpu_ids = gpus.iter().map(|gpu| gpu.id).collect::<Vec<_>>();
 
+    let config = client.config().await.unwrap_or_default();
     let latest_version = get_latest_version().await;
 
     let (action_tx, mut action_rx) = mpsc::channel(10);
     let tray = CardwireTray {
         mode: initial_mode,
         gpus,
+        config,
         action_tx,
         current_version: format!("v{}", env!("CARGO_PKG_VERSION").to_string()),
         latest_version,
@@ -34,15 +64,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tray_handle = tray.spawn().await.expect("Failed to spawn tray");
 
-    let mut mode_stream = proxy.receive_mode_changed().await;
+    let mut mode_stream = mode_proxy.receive_mode_changed().await;
 
-    let proxy_clone = proxy.clone();
+    let client_clone = client.clone();
     let handle_clone = tray_handle.clone();
 
     tokio::spawn(async move {
         let mut version_refresh = tokio::time::interval(Duration::from_secs(60 * 60 * 24));
         version_refresh.set_missed_tick_behavior(MissedTickBehavior::Skip);
         version_refresh.tick().await;
+
+        let mut gpu_discovery_refresh = tokio::time::interval(Duration::from_secs(60));
+        gpu_discovery_refresh.set_missed_tick_behavior(MissedTickBehavior::Skip);
+        gpu_discovery_refresh.tick().await;
+
+        let (power_tx, mut power_rx) = mpsc::channel(20);
+        let mut watched_gpu_ids = HashSet::new();
+        for gpu_id in initial_gpu_ids {
+            if watched_gpu_ids.insert(gpu_id) {
+                spawn_power_state_listener(client_clone.clone(), gpu_id, power_tx.clone());
+            }
+        }
 
         loop {
             tokio::select! {
@@ -56,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some(action) = action_rx.recv() => {
                     match action {
                         TrayAction::SetMode(mode) => {
-                            let _ = proxy_clone.set_mode(mode).await;
+                            let _ = client_clone.set_mode(mode).await;
                         }
                         TrayAction::Notify(msg, icon) => {
                             // Using tokio::spawn to ensure any blocking code in show() doesn't block the async task
@@ -69,15 +111,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             });
                         }
                         TrayAction::ToggleGpuBlock(gpu_id, block) => {
-                            let _ = proxy_clone.set_gpu_block(gpu_id, block).await;
+                            if client_clone.set_gpu_block(gpu_id, block).await.is_ok() {
+                                let _ = handle_clone.update(|tray: &mut CardwireTray| {
+                                    if let Some(gpu) = tray.gpus.iter_mut().find(|gpu| gpu.id == gpu_id) {
+                                        gpu.blocked = block;
+                                    }
+                                }).await;
+                            }
+                        }
+                        TrayAction::SetConfig(key, enabled) => {
+                            if client_clone.set_config(key, enabled).await.is_ok() {
+                                let _ = handle_clone.update(|tray: &mut CardwireTray| {
+                                    tray.config.set(key, enabled);
+                                }).await;
+                            }
                         }
                         TrayAction::Quit => {
                             std::process::exit(0);
                         }
                     }
                 }
-                _ = tokio::time::sleep(Duration::from_secs(5)) => {
-                    let new_gpus = get_gpus(&proxy_clone).await;
+                Some((gpu_id, power_state)) = power_rx.recv() => {
+                    let _ = handle_clone.update(|tray: &mut CardwireTray| {
+                        if let Some(gpu) = tray.gpus.iter_mut().find(|gpu| gpu.id == gpu_id) {
+                            gpu.power_state = power_state;
+                        }
+                    }).await;
+                }
+                _ = gpu_discovery_refresh.tick() => {
+                    let new_gpus = get_gpus(&client_clone).await;
+                    for gpu in &new_gpus {
+                        if watched_gpu_ids.insert(gpu.id) {
+                            spawn_power_state_listener(client_clone.clone(), gpu.id, power_tx.clone());
+                        }
+                    }
                     let _ = handle_clone.update(|tray: &mut CardwireTray| {
                         tray.gpus = new_gpus;
                     }).await;

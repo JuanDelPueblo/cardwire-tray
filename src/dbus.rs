@@ -1,4 +1,4 @@
-use crate::models::CardwireProxy;
+use crate::models::{CardwireClient, CardwireManagerProxy};
 use rfd::MessageDialog;
 use zbus::Connection;
 
@@ -24,13 +24,13 @@ async fn get_connection() -> Connection {
     }
 }
 
-pub async fn get_proxy() -> CardwireProxy<'static> {
+pub async fn get_client() -> CardwireClient {
     let conn = get_connection().await;
     return loop {
-        match CardwireProxy::new(&conn).await {
+        match CardwireManagerProxy::new(&conn).await {
             Ok(p) => {
-                if p.mode().await.is_ok() {
-                    break p;
+                if p.status().await.is_ok() {
+                    break CardwireClient::new(conn);
                 }
             }
             Err(_) => {}
