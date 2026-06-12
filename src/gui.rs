@@ -1,6 +1,6 @@
 use crate::{
     models::{AppletConfig, AppletMode, CardwireClient, CardwireConfigState, ConfigKey, GpuInfo},
-    utils::get_gpus,
+    utils::{get_gpus, get_latest_version},
 };
 use iced::{
     Alignment, Background, Border, Color, Element, Fill, Length, Shadow, Size, Subscription, Task,
@@ -21,6 +21,7 @@ use std::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Page {
+    Status,
     Config,
     Gpu(u32),
 }
@@ -47,6 +48,9 @@ enum Message {
     TrayToggleFromChanged(AppletMode),
     TrayToggleToChanged(AppletMode),
     ClearError,
+    CheckUpdate,
+    UpdateChecked(Option<String>),
+    OpenUrl(String),
 }
 
 pub fn run_gui_daemon(
@@ -54,13 +58,13 @@ pub fn run_gui_daemon(
     applet_config: Arc<Mutex<AppletConfig>>,
     open_requested: Arc<AtomicBool>,
 ) -> iced::Result {
-    iced::daemon("Cardwire", CardwireGui::update, CardwireGui::view)
+    iced::daemon("Cardwire GUI", CardwireGui::update, CardwireGui::view)
         .subscription(CardwireGui::subscription)
         .theme(|_, _| app_theme())
         .run_with(move || {
             (
                 CardwireGui::new(client, applet_config, open_requested),
-                Task::none(),
+                Task::perform(get_latest_version(), Message::UpdateChecked),
             )
         })
 }
@@ -75,6 +79,8 @@ struct CardwireGui {
     snapshot: Option<GuiSnapshot>,
     loading: bool,
     error: Option<String>,
+    latest_version: Option<String>,
+    checking_update: bool,
 }
 
 impl CardwireGui {
@@ -94,10 +100,12 @@ impl CardwireGui {
             open_requested,
             applet_config_state,
             window_id: None,
-            selected_page: Page::Config,
+            selected_page: Page::Status,
             snapshot: None,
             loading: false,
             error: None,
+            latest_version: None,
+            checking_update: false,
         }
     }
 
@@ -184,6 +192,21 @@ impl CardwireGui {
                 self.error = None;
                 Task::none()
             }
+            Message::CheckUpdate => {
+                self.checking_update = true;
+                Task::perform(get_latest_version(), Message::UpdateChecked)
+            }
+            Message::UpdateChecked(result) => {
+                self.checking_update = false;
+                self.latest_version = result;
+                Task::none()
+            }
+            Message::OpenUrl(url) => {
+                let _ = std::process::Command::new("xdg-open")
+                    .arg(url)
+                    .spawn();
+                Task::none()
+            }
         }
     }
 
@@ -197,6 +220,7 @@ impl CardwireGui {
 
     fn view(&self, _window_id: window::Id) -> Element<'_, Message> {
         let content = match &self.selected_page {
+            Page::Status => self.view_status(),
             Page::Config => self.view_config(),
             Page::Gpu(gpu_id) => self.view_gpu(*gpu_id),
         };
@@ -228,9 +252,14 @@ impl CardwireGui {
 
     fn open_or_focus_window(&mut self) -> Task<Message> {
         self.loading = true;
+        self.checking_update = true;
 
         if let Some(id) = self.window_id {
-            Task::batch([window::gain_focus(id), Self::load_task(self.client.clone())])
+            Task::batch([
+                window::gain_focus(id),
+                Self::load_task(self.client.clone()),
+                Task::perform(get_latest_version(), Message::UpdateChecked),
+            ])
         } else {
             let (id, open) = window::open(window_settings());
             self.window_id = Some(id);
@@ -238,6 +267,7 @@ impl CardwireGui {
             Task::batch([
                 open.map(Message::WindowOpened),
                 Self::load_task(self.client.clone()),
+                Task::perform(get_latest_version(), Message::UpdateChecked),
             ])
         }
     }
@@ -248,9 +278,14 @@ impl CardwireGui {
             .spacing(10)
             .padding(16)
             .width(Fill)
-            .push(text("Cardwire").size(26))
+            .push(text("Cardwire GUI").size(26))
             .push(sidebar_button(
-                "Config",
+                "Status",
+                self.selected_page == Page::Status,
+                Message::SelectPage(Page::Status),
+            ))
+            .push(sidebar_button(
+                "Settings",
                 self.selected_page == Page::Config,
                 Message::SelectPage(Page::Config),
             ))
@@ -286,11 +321,27 @@ impl CardwireGui {
             .into()
     }
 
+    fn view_status(&self) -> Element<'_, Message> {
+        let mut content = Column::new()
+            .spacing(16)
+            .push(text("Status").size(30))
+            .push(self.status_section());
+
+        if let Some(snapshot) = &self.snapshot {
+            content = content
+                .push(mode_section(snapshot.mode))
+                .push(self.gpu_summary_section(&snapshot.gpus));
+        } else {
+            content = content.push(text("Waiting for daemon data..."));
+        }
+
+        container(content).width(Fill).into()
+    }
+
     fn view_config(&self) -> Element<'_, Message> {
         let mut content = Column::new()
             .spacing(16)
-            .push(text("Config").size(30))
-            .push(self.status_section());
+            .push(text("Settings").size(30));
 
         if let Some(error) = &self.error {
             content = content.push(
@@ -308,17 +359,100 @@ impl CardwireGui {
         }
 
         if let Some(snapshot) = &self.snapshot {
-            content = content
-                .push(mode_section(snapshot.mode))
-                .push(daemon_config_section(snapshot.config));
+            content = content.push(daemon_config_section(snapshot.config));
         } else {
             content = content.push(text("Waiting for daemon data..."));
         }
 
-        content = content.push(self.tray_applet_section());
+        content = content
+            .push(self.tray_applet_section())
+            .push(self.update_checker_section())
+            .push(self.credits_section());
 
         container(content).width(Fill).into()
     }
+
+    fn gpu_summary_section(&self, gpus: &[GpuInfo]) -> Element<'_, Message> {
+        let mut table = Column::new().spacing(10);
+        
+        if gpus.is_empty() {
+            table = table.push(text("No GPUs detected."));
+            return section("GPU Status Summary", table);
+        }
+
+        // Header Row
+        table = table.push(
+            row![
+                text("GPU Name").width(Length::FillPortion(3)),
+                text("Power State").width(Length::FillPortion(2)),
+                text("Primary").width(Length::FillPortion(1)),
+                text("Blocked").width(Length::FillPortion(1)),
+            ]
+            .spacing(12)
+            .padding([4, 0])
+        );
+
+        table = table.push(horizontal_rule(1));
+
+        for gpu in gpus {
+            let power_color = match gpu.power_state.to_lowercase().as_str() {
+                "active" | "on" => Color::from_rgb(0.2, 0.7, 0.3),
+                "suspended" | "off" => Color::from_rgb(0.5, 0.5, 0.5),
+                _ => Color::from_rgb(0.8, 0.5, 0.2),
+            };
+
+            let blocked_color = if gpu.blocked {
+                Color::from_rgb(0.8, 0.2, 0.2)
+            } else {
+                Color::from_rgb(0.2, 0.7, 0.3)
+            };
+
+            let primary_text = if gpu.is_default { "Yes" } else { "No" };
+            let blocked_text = if gpu.blocked { "Yes" } else { "No" };
+
+            table = table.push(
+                row![
+                    text(gpu.name.clone()).width(Length::FillPortion(3)),
+                    text(gpu.power_state.clone())
+                        .color(power_color)
+                        .width(Length::FillPortion(2)),
+                    text(primary_text).width(Length::FillPortion(1)),
+                    text(blocked_text)
+                        .color(blocked_color)
+                        .width(Length::FillPortion(1)),
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center)
+            );
+        }
+
+        section("GPU Status Summary", table)
+    }
+
+    fn credits_section(&self) -> Element<'_, Message> {
+        section(
+            "Credits",
+            column![
+                row![
+                    link_button("JuanDelPueblo", "https://github.com/JuanDelPueblo"),
+                    text(" (for developing "),
+                    link_button("Cardwire Tray", "https://github.com/JuanDelPueblo/cardwire-tray"),
+                    text(")")
+                ]
+                .align_y(Alignment::Center),
+                row![
+                    link_button("Luytan", "https://github.com/luytan"),
+                    text(" (for developing "),
+                    link_button("Cardwire", "https://github.com/OpenGamingCollective/cardwire"),
+                    text(")")
+                ]
+                .align_y(Alignment::Center),
+            ]
+            .spacing(10),
+        )
+    }
+
+
 
     fn status_section(&self) -> Element<'_, Message> {
         let daemon_status = self
@@ -367,6 +501,57 @@ impl CardwireGui {
                 .align_y(Alignment::Center),
             ]
             .spacing(10),
+        )
+    }
+
+    fn update_checker_section(&self) -> Element<'_, Message> {
+        let current_version = format!("v{}", env!("CARGO_PKG_VERSION"));
+
+        let status_text = if self.checking_update {
+            text("Checking for updates...").style(iced::widget::text::secondary)
+        } else if let Some(latest) = &self.latest_version {
+            if latest == &current_version {
+                text(format!("You are running the latest version! ({})", current_version))
+                    .color(Color::from_rgb(0.2, 0.7, 0.3))
+            } else {
+                text(format!("Update available! Latest: {} (Current: {})", latest, current_version))
+                    .color(Color::from_rgb(0.8, 0.2, 0.2))
+            }
+        } else {
+            text(format!("Current version: {}", current_version))
+                .style(iced::widget::text::secondary)
+        };
+
+        let check_button = if self.checking_update {
+            button(
+                container(text("Checking...").size(13))
+                    .width(160)
+                    .height(34)
+                    .align_x(Alignment::Center)
+                    .align_y(Alignment::Center)
+            )
+            .padding([0, 12])
+        } else {
+            button(
+                container(text("Check for Updates").size(13))
+                    .width(160)
+                    .height(34)
+                    .align_x(Alignment::Center)
+                    .align_y(Alignment::Center)
+            )
+            .padding([0, 12])
+            .on_press(Message::CheckUpdate)
+        };
+
+        section(
+            "Software updates",
+            row![
+                status_text.width(Length::FillPortion(1)),
+                check_button
+            ]
+            .spacing(12)
+            .align_y(Alignment::Center)
+            .width(Fill),
         )
     }
 
@@ -455,9 +640,17 @@ async fn set_gpu_block_and_load(
 }
 
 fn window_settings() -> window::Settings {
+    let icon_bytes = include_bytes!("../icons/gpu.rgba");
+    let icon = window::icon::from_rgba(icon_bytes.to_vec(), 64, 64).expect("Failed to load window icon");
+
     window::Settings {
         size: Size::new(960.0, 640.0),
         position: window::Position::Centered,
+        icon: Some(icon),
+        platform_specific: window::settings::PlatformSpecific {
+            application_id: String::from("me.edyan.cardwiretray"),
+            ..Default::default()
+        },
         ..window::Settings::default()
     }
 }
@@ -802,3 +995,41 @@ const MODE_CHOICES: [(u32, &str); 4] = [
     (2, "Manual"),
     (3, "Smart"),
 ];
+
+fn link_button_style(
+    theme: &Theme,
+    status: iced::widget::button::Status,
+) -> iced::widget::button::Style {
+    let is_dark = is_dark_mode(theme);
+    let mut style = iced::widget::button::Style {
+        text_color: if is_dark {
+            Color::from_rgb(0.4, 0.6, 1.0)
+        } else {
+            Color::from_rgb(0.1, 0.4, 0.8)
+        },
+        background: None,
+        border: border::rounded(0),
+        ..iced::widget::button::Style::default()
+    };
+
+    match status {
+        iced::widget::button::Status::Hovered => {
+            style.text_color = if is_dark {
+                Color::from_rgb(0.6, 0.8, 1.0)
+            } else {
+                Color::from_rgb(0.2, 0.5, 0.9)
+            };
+        }
+        _ => {}
+    }
+
+    style
+}
+
+fn link_button<'a>(label: &'a str, url: &'a str) -> Element<'a, Message> {
+    button(text(label).size(14))
+        .padding(0)
+        .style(move |theme, status| link_button_style(theme, status))
+        .on_press(Message::OpenUrl(url.to_string()))
+        .into()
+}

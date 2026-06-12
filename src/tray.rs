@@ -59,7 +59,7 @@ impl Tray for CardwireTray {
     }
 
     fn title(&self) -> String {
-        "Cardwire".to_string()
+        "Cardwire GUI".to_string()
     }
 
     fn tool_tip(&self) -> ksni::ToolTip {
