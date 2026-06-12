@@ -237,7 +237,8 @@ impl CardwireGui {
                             bottom: 0.0,
                             left: 0.0,
                         })
-                ))
+                )
+                .style(scrollable_style))
                 .width(Fill)
                 .height(Fill)
                 .padding([24, 28])
@@ -293,7 +294,7 @@ impl CardwireGui {
             .push(
                 text("Available GPUs")
                     .size(15)
-                    .style(iced::widget::text::secondary),
+                    .color(if is_dark_mode(&app_theme()) { DARK_TEXT_SECONDARY } else { LIGHT_TEXT_SECONDARY }),
             );
 
         if let Some(snapshot) = &self.snapshot {
@@ -833,6 +834,32 @@ fn lsof_section(gpu: &GpuInfo) -> Element<'static, Message> {
     }
 
     section("Open GPU file descriptors", table)
+}
+
+fn scrollable_style(theme: &Theme, _status: iced::widget::scrollable::Status) -> iced::widget::scrollable::Style {
+    let is_dark = is_dark_mode(theme);
+    
+    let scroller_color = if is_dark {
+        Color::from_rgb(0.25, 0.27, 0.35)
+    } else {
+        Color::from_rgb(0.65, 0.68, 0.72)
+    };
+    
+    let active_rail = iced::widget::scrollable::Rail {
+        background: Some(Background::Color(Color::TRANSPARENT)),
+        border: Border::default(),
+        scroller: iced::widget::scrollable::Scroller {
+            color: scroller_color,
+            border: Border::default(),
+        },
+    };
+    
+    iced::widget::scrollable::Style {
+        container: container::Style::default(),
+        vertical_rail: active_rail,
+        horizontal_rail: active_rail,
+        gap: None,
+    }
 }
 
 fn is_dark_mode(theme: &Theme) -> bool {

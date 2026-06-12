@@ -11,6 +11,9 @@ finish-args:
   - --share=ipc
   - --socket=fallback-x11
   - --socket=wayland
+  - --filesystem=xdg-config/gtk-3.0:ro
+  - --filesystem=xdg-config/gtk-4.0:ro
+  - --filesystem=xdg-config/kdeglobals:ro
 
   - --own-name=org.kde.*
   - --talk-name=org.kde.StatusNotifierWatcher
