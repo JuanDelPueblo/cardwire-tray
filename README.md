@@ -2,9 +2,11 @@
 
 <img width="846" height="341" alt="image" src="https://github.com/user-attachments/assets/4b083b1d-dea3-473b-b3ac-d0c9def6408a" />
 
-### An universal GUI frontend and tray applet for [Cardwire](https://github.com/OpenGamingCollective/cardwire) GPU manager.
+### A universal GUI frontend and tray applet for [Cardwire](https://github.com/OpenGamingCollective/cardwire) GPU manager.
 
-This applet implements all current Cardwire features including mode switching between integrated, hybrid, manual, and smart mode. It also supports manual GPU blocking while in manual mode. Hovering over the tray icon shows all info about your GPUs such as their name, power state, and block status.
+This application implements all current Cardwire features including mode switching (between integrated, hybrid, manual, and smart modes) and manual GPU blocking. It consists of:
+- A tray applet providing quick mode-toggle, manual GPU disabling, and a hover tooltip summary of GPU states.
+- A GUI frontend featuring more detailed GPU information and settings for the GUI and daemon.
 
 ## Install
 

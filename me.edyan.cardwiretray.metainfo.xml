@@ -15,7 +15,8 @@
   <project_license>MIT</project_license>
 
   <description>
-    <p>An universal GUI frontend and tray applet for Cardwire GPU manager.</p>
+    <p>A universal GUI frontend and tray applet for Cardwire GPU manager.</p>
+    <p>This application provides both a status notifier icon in the system tray (for quick mode-switching and status tooltips) and a full GUI window to manage the Cardwire daemon. It supports mode switching, manual GPU blocking, configuring applet behavior, and querying updates.</p>
   </description>
 
   <url type="homepage">https://github.com/JuanDelPueblo/cardwire-tray</url>
