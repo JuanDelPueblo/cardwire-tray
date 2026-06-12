@@ -1,7 +1,5 @@
 use crate::{
-    models::{
-        AppletConfig, CardwireClient, CardwireConfigState, ConfigKey, GpuInfo, TrayToggleMode,
-    },
+    models::{AppletConfig, AppletMode, CardwireClient, CardwireConfigState, ConfigKey, GpuInfo},
     utils::get_gpus,
 };
 use iced::{
@@ -46,7 +44,8 @@ enum Message {
     ModeSelected(u32),
     DaemonConfigToggled(ConfigKey, bool),
     GpuBlockToggled(u32, bool),
-    TrayToggleChanged(TrayToggleMode),
+    TrayToggleFromChanged(AppletMode),
+    TrayToggleToChanged(AppletMode),
     ClearError,
 }
 
@@ -173,16 +172,12 @@ impl CardwireGui {
                     Message::SnapshotLoaded,
                 )
             }
-            Message::TrayToggleChanged(left_click_toggle) => {
-                self.applet_config_state.left_click_toggle = left_click_toggle;
-
-                if let Ok(mut config) = self.applet_config.lock() {
-                    config.left_click_toggle = left_click_toggle;
-                    if let Err(error) = config.save() {
-                        self.error = Some(format!("Could not save tray applet settings: {error}"));
-                    }
-                }
-
+            Message::TrayToggleFromChanged(mode) => {
+                self.update_applet_config(|config| config.set_toggle_from(mode));
+                Task::none()
+            }
+            Message::TrayToggleToChanged(mode) => {
+                self.update_applet_config(|config| config.set_toggle_to(mode));
                 Task::none()
             }
             Message::ClearError => {
@@ -337,18 +332,46 @@ impl CardwireGui {
     fn tray_applet_section(&self) -> Element<'_, Message> {
         section(
             "Tray applet",
-            row![
-                text("Left-click toggle").width(Length::FillPortion(1)),
-                pick_list(
-                    TrayToggleMode::ALL.as_slice(),
-                    Some(self.applet_config_state.left_click_toggle),
-                    Message::TrayToggleChanged,
-                )
-                .width(Length::FillPortion(2))
+            column![
+                row![
+                    text("Left-click toggles from").width(Length::FillPortion(1)),
+                    pick_list(
+                        AppletMode::ALL.as_slice(),
+                        Some(self.applet_config_state.toggle_from),
+                        Message::TrayToggleFromChanged,
+                    )
+                    .width(Length::FillPortion(2))
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center),
+                row![
+                    text("Left-click toggles to").width(Length::FillPortion(1)),
+                    pick_list(
+                        AppletMode::ALL.as_slice(),
+                        Some(self.applet_config_state.toggle_to),
+                        Message::TrayToggleToChanged,
+                    )
+                    .width(Length::FillPortion(2))
+                ]
+                .spacing(12)
+                .align_y(Alignment::Center),
             ]
-            .spacing(12)
-            .align_y(Alignment::Center),
+            .spacing(10),
         )
+    }
+
+    fn update_applet_config(&mut self, update: impl FnOnce(&mut AppletConfig)) {
+        let save_result = if let Ok(mut config) = self.applet_config.lock() {
+            update(&mut config);
+            self.applet_config_state = *config;
+            config.save()
+        } else {
+            return;
+        };
+
+        if let Err(error) = save_result {
+            self.error = Some(format!("Could not save tray applet settings: {error}"));
+        }
     }
 
     fn view_gpu(&self, gpu_id: u32) -> Element<'_, Message> {
