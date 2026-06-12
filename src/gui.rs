@@ -4,7 +4,7 @@ use crate::{
 };
 use iced::{
     Alignment, Background, Border, Color, Element, Fill, Length, Shadow, Size, Subscription, Task,
-    Theme, Vector, border,
+    Theme, Vector, border, font, Font,
     widget::{
         Column, Row, button, checkbox, column, container, horizontal_rule, pick_list, radio, row,
         scrollable, text,
@@ -204,10 +204,19 @@ impl CardwireGui {
         container(
             row![
                 self.sidebar(),
-                container(scrollable(content))
-                    .width(Fill)
-                    .height(Fill)
-                    .padding([24, 28])
+                container(scrollable(
+                    container(content)
+                        .width(Fill)
+                        .padding(iced::Padding {
+                            top: 0.0,
+                            right: 16.0,
+                            bottom: 0.0,
+                            left: 0.0,
+                        })
+                ))
+                .width(Fill)
+                .height(Fill)
+                .padding([24, 28])
             ]
             .height(Fill),
         )
@@ -238,6 +247,7 @@ impl CardwireGui {
         let mut sidebar = Column::new()
             .spacing(10)
             .padding(16)
+            .width(Fill)
             .push(text("Cardwire").size(26))
             .push(sidebar_button(
                 "Config",
@@ -486,7 +496,8 @@ fn gpu_sidebar_entry(
         Message::SelectPage(Page::Gpu(gpu.id)),
     )]
     .spacing(8)
-    .align_y(Alignment::Center);
+    .align_y(Alignment::Center)
+    .width(Fill);
 
     if manual_mode {
         if gpu.is_default {
@@ -510,13 +521,26 @@ fn sidebar_button(
     selected: bool,
     message: Message,
 ) -> Element<'static, Message> {
-    button(text(label.into()).size(14))
+    button(
+        container(
+            text(label.into())
+                .size(13)
+                .font(Font {
+                    weight: font::Weight::Medium,
+                    ..Font::default()
+                })
+        )
         .width(Fill)
-        .height(38)
-        .padding([0, 12])
-        .style(move |theme, status| sidebar_button_style(theme, status, selected))
-        .on_press(message)
-        .into()
+        .height(Fill)
+        .align_x(Alignment::Start)
+        .align_y(Alignment::Center),
+    )
+    .width(Fill)
+    .height(38)
+    .padding([0, 16])
+    .style(move |theme, status| sidebar_button_style(theme, status, selected))
+    .on_press(message)
+    .into()
 }
 
 fn mode_section(current_mode: u32) -> Element<'static, Message> {
@@ -618,24 +642,46 @@ fn lsof_section(gpu: &GpuInfo) -> Element<'static, Message> {
     section("Open GPU file descriptors", table)
 }
 
-fn root_style(theme: &Theme) -> container::Style {
-    let palette = theme.extended_palette();
+fn is_dark_mode(theme: &Theme) -> bool {
+    !matches!(theme, Theme::Light | Theme::KanagawaLotus)
+}
 
+// Custom premium palette for dark mode
+const DARK_BG_ROOT: Color = Color::from_rgb(0.082, 0.086, 0.110);      // #15161c
+const DARK_BG_SIDEBAR: Color = Color::from_rgb(0.055, 0.059, 0.075);   // #0e0f13
+const DARK_BG_PANEL: Color = Color::from_rgb(0.114, 0.122, 0.153);     // #1d1f27
+const DARK_BORDER_PANEL: Color = Color::from_rgb(0.165, 0.173, 0.216); // #2a2c37
+const DARK_TEXT_PRIMARY: Color = Color::from_rgb(0.957, 0.957, 0.973); // #f4f4f8
+const DARK_TEXT_SECONDARY: Color = Color::from_rgb(0.627, 0.647, 0.706); // #a0a5b4
+const DARK_PRIMARY: Color = Color::from_rgb(0.259, 0.447, 0.843);      // #4272d7
+const DARK_PRIMARY_TEXT: Color = Color::from_rgb(1.0, 1.0, 1.0);
+
+// Custom premium palette for light mode
+const LIGHT_BG_ROOT: Color = Color::from_rgb(0.957, 0.965, 0.976);     // #f4f6f9
+const LIGHT_BG_SIDEBAR: Color = Color::from_rgb(0.902, 0.918, 0.937);  // #e6eaef
+const LIGHT_BG_PANEL: Color = Color::from_rgb(1.0, 1.0, 1.0);          // #ffffff
+const LIGHT_BORDER_PANEL: Color = Color::from_rgb(0.835, 0.859, 0.890); // #d5dbde
+const LIGHT_TEXT_PRIMARY: Color = Color::from_rgb(0.086, 0.090, 0.114); // #16171d
+const LIGHT_TEXT_SECONDARY: Color = Color::from_rgb(0.404, 0.431, 0.490); // #676e7d
+const LIGHT_PRIMARY: Color = Color::from_rgb(0.212, 0.412, 0.784);     // #3669c8
+const LIGHT_PRIMARY_TEXT: Color = Color::from_rgb(1.0, 1.0, 1.0);
+
+fn root_style(theme: &Theme) -> container::Style {
+    let is_dark = is_dark_mode(theme);
     container::Style {
-        background: Some(Background::Color(palette.background.base.color)),
-        text_color: Some(palette.background.base.text),
+        background: Some(Background::Color(if is_dark { DARK_BG_ROOT } else { LIGHT_BG_ROOT })),
+        text_color: Some(if is_dark { DARK_TEXT_PRIMARY } else { LIGHT_TEXT_PRIMARY }),
         ..container::Style::default()
     }
 }
 
 fn sidebar_style(theme: &Theme) -> container::Style {
-    let palette = theme.extended_palette();
-
+    let is_dark = is_dark_mode(theme);
     container::Style {
-        background: Some(Background::Color(palette.background.weak.color)),
-        text_color: Some(palette.background.base.text),
+        background: Some(Background::Color(if is_dark { DARK_BG_SIDEBAR } else { LIGHT_BG_SIDEBAR })),
+        text_color: Some(if is_dark { DARK_TEXT_PRIMARY } else { LIGHT_TEXT_PRIMARY }),
         border: Border {
-            color: palette.background.strong.color.scale_alpha(0.35),
+            color: if is_dark { DARK_BORDER_PANEL } else { LIGHT_BORDER_PANEL },
             width: 1.0,
             radius: 0.0.into(),
         },
@@ -644,28 +690,36 @@ fn sidebar_style(theme: &Theme) -> container::Style {
 }
 
 fn panel_style(theme: &Theme) -> container::Style {
-    let palette = theme.extended_palette();
-
+    let is_dark = is_dark_mode(theme);
     container::Style {
-        background: Some(Background::Color(palette.background.weak.color)),
-        text_color: Some(palette.background.base.text),
-        border: border::rounded(8)
+        background: Some(Background::Color(if is_dark { DARK_BG_PANEL } else { LIGHT_BG_PANEL })),
+        text_color: Some(if is_dark { DARK_TEXT_PRIMARY } else { LIGHT_TEXT_PRIMARY }),
+        border: border::rounded(12)
             .width(1)
-            .color(palette.background.strong.color.scale_alpha(0.45)),
+            .color(if is_dark { DARK_BORDER_PANEL } else { LIGHT_BORDER_PANEL }),
         shadow: Shadow {
-            color: Color::from_rgba(0.0, 0.0, 0.0, 0.18),
-            offset: Vector::new(0.0, 6.0),
-            blur_radius: 18.0,
+            color: Color::from_rgba(0.0, 0.0, 0.0, if is_dark { 0.22 } else { 0.05 }),
+            offset: Vector::new(0.0, 4.0),
+            blur_radius: 12.0,
         },
     }
 }
 
 fn error_panel_style(theme: &Theme) -> container::Style {
     let palette = theme.extended_palette();
+    let is_dark = is_dark_mode(theme);
 
     container::Style {
-        background: Some(Background::Color(palette.danger.weak.color)),
-        text_color: Some(palette.danger.weak.text),
+        background: Some(Background::Color(if is_dark {
+            Color::from_rgb(0.25, 0.08, 0.08)
+        } else {
+            palette.danger.weak.color
+        })),
+        text_color: Some(if is_dark {
+            Color::from_rgb(1.0, 0.8, 0.8)
+        } else {
+            palette.danger.weak.text
+        }),
         border: border::rounded(8)
             .width(1)
             .color(palette.danger.base.color.scale_alpha(0.55)),
@@ -678,36 +732,37 @@ fn sidebar_button_style(
     status: iced::widget::button::Status,
     selected: bool,
 ) -> iced::widget::button::Style {
-    let palette = theme.extended_palette();
+    let is_dark = is_dark_mode(theme);
     let mut style = iced::widget::button::Style {
-        text_color: palette.background.base.text,
+        text_color: if is_dark { DARK_TEXT_SECONDARY } else { LIGHT_TEXT_SECONDARY },
         border: border::rounded(8),
+        background: None,
         ..iced::widget::button::Style::default()
     };
 
     if selected {
-        style.background = Some(Background::Color(palette.primary.weak.color));
-        style.text_color = palette.primary.weak.text;
-        style.border = border::rounded(8)
-            .width(1)
-            .color(palette.primary.base.color.scale_alpha(0.45));
-    }
-
-    match status {
-        iced::widget::button::Status::Hovered => {
-            style.background = Some(Background::Color(if selected {
-                palette.primary.base.color
-            } else {
-                palette.background.strong.color.scale_alpha(0.45)
-            }));
+        style.background = Some(Background::Color(if is_dark { DARK_PRIMARY } else { LIGHT_PRIMARY }));
+        style.text_color = if is_dark { DARK_PRIMARY_TEXT } else { LIGHT_PRIMARY_TEXT };
+    } else {
+        match status {
+            iced::widget::button::Status::Hovered => {
+                style.background = Some(Background::Color(if is_dark {
+                    Color::from_rgba(1.0, 1.0, 1.0, 0.06)
+                } else {
+                    Color::from_rgba(0.0, 0.0, 0.0, 0.05)
+                }));
+                style.text_color = if is_dark { DARK_TEXT_PRIMARY } else { LIGHT_TEXT_PRIMARY };
+            }
+            iced::widget::button::Status::Pressed => {
+                style.background = Some(Background::Color(if is_dark {
+                    Color::from_rgba(1.0, 1.0, 1.0, 0.1)
+                } else {
+                    Color::from_rgba(0.0, 0.0, 0.0, 0.1)
+                }));
+                style.text_color = if is_dark { DARK_TEXT_PRIMARY } else { LIGHT_TEXT_PRIMARY };
+            }
+            _ => {}
         }
-        iced::widget::button::Status::Pressed => {
-            style.background = Some(Background::Color(palette.primary.base.color));
-        }
-        iced::widget::button::Status::Disabled => {
-            style.text_color = style.text_color.scale_alpha(0.45);
-        }
-        iced::widget::button::Status::Active => {}
     }
 
     style
