@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Cardwire Tray
-Comment=Tray icon for Cardwire GPU manager
+Comment=GUI frontend for Cardwire GPU manager
 Exec=cardwire-tray
 Icon=me.edyan.cardwiretray
 Terminal=false
