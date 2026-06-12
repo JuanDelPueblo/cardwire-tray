@@ -1,6 +1,8 @@
 # Cardwire Tray
 
-<img width="755" height="298" alt="image" src="https://github.com/user-attachments/assets/39422cb1-d18a-47b5-a7f4-06de6fb6e38d" />
+<img height="500" alt="image" src="https://github.com/user-attachments/assets/1496138f-e871-46b6-8903-2ee7e1057eb9" />
+<img height="500" alt="image" src="https://github.com/user-attachments/assets/6a46e753-00ed-40be-b87f-10bbb59ef940" />
+
 
 ### A universal GUI frontend and tray applet for [Cardwire](https://github.com/OpenGamingCollective/cardwire) GPU manager.
 
