@@ -1,4 +1,4 @@
-use crate::models::{CardwireTray, ConfigKey, TrayAction};
+use crate::models::{CardwireTray, TrayAction};
 use ksni::Tray;
 
 impl Tray for CardwireTray {
@@ -11,6 +11,7 @@ impl Tray for CardwireTray {
             0 => "integrated",
             1 => "hybrid",
             2 => "manual",
+            3 => "smart",
             _ => return "preferences-system-windows".to_string(),
         };
 
@@ -26,16 +27,18 @@ impl Tray for CardwireTray {
     }
 
     fn activate(&mut self, _x: i32, _y: i32) {
-        let new_mode = if self.mode == 0 { 1 } else { 0 };
-        let mode_desc = if new_mode == 0 {
-            "Integrated"
-        } else {
-            "Hybrid"
-        };
-        let icon_name_base = if new_mode == 0 {
-            "integrated"
-        } else {
-            "hybrid"
+        let applet_config = self
+            .applet_config
+            .lock()
+            .map(|config| *config)
+            .unwrap_or_default();
+        let new_mode = applet_config.next_mode(self.mode);
+        let (mode_desc, icon_name_base) = match new_mode {
+            0 => ("Integrated", "integrated"),
+            1 => ("Hybrid", "hybrid"),
+            2 => ("Manual", "manual"),
+            3 => ("Smart", "smart"),
+            _ => ("Unknown", "gpu"),
         };
 
         let dev_path = std::env::current_dir()
@@ -56,7 +59,7 @@ impl Tray for CardwireTray {
     }
 
     fn title(&self) -> String {
-        "Cardwire".to_string()
+        "Cardwire GUI".to_string()
     }
 
     fn tool_tip(&self) -> ksni::ToolTip {
@@ -90,6 +93,17 @@ impl Tray for CardwireTray {
     fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
         let mut items = Vec::new();
 
+        items.push(ksni::MenuItem::Standard(ksni::menu::StandardItem {
+            label: "Open Cardwire".to_string(),
+            icon_name: "preferences-system".into(),
+            activate: Box::new(|this: &mut Self| {
+                let _ = this.action_tx.try_send(TrayAction::OpenWindow);
+            }),
+            ..Default::default()
+        }));
+
+        items.push(ksni::MenuItem::Separator);
+
         // Modes
         let get_icon = |name: &str| -> String {
             let dev_path = std::env::current_dir()
@@ -119,9 +133,14 @@ impl Tray for CardwireTray {
                 icon_name: get_icon("manual"),
                 ..Default::default()
             },
+            ksni::menu::RadioItem {
+                label: "Smart Mode".to_string(),
+                icon_name: get_icon("smart"),
+                ..Default::default()
+            },
         ];
 
-        let selected_mode_index = if self.mode <= 2 {
+        let selected_mode_index = if self.mode <= 3 {
             self.mode as usize
         } else {
             0
@@ -175,41 +194,6 @@ impl Tray for CardwireTray {
                 }));
             }
         }
-
-        items.push(ksni::MenuItem::Separator);
-
-        let config_options = [
-            ("Auto-apply GPU state", ConfigKey::AutoApplyGpuState),
-            ("Battery auto-switch", ConfigKey::BatteryAutoSwitch),
-            (
-                "Experimental NVIDIA block",
-                ConfigKey::ExperimentalNvidiaBlock,
-            ),
-        ];
-
-        let config_items = config_options
-            .into_iter()
-            .map(|(label, key)| {
-                let enabled = self.config.get(key);
-                ksni::MenuItem::Checkmark(ksni::menu::CheckmarkItem {
-                    label: label.to_string(),
-                    checked: enabled,
-                    activate: Box::new(move |this: &mut Self| {
-                        let _ = this
-                            .action_tx
-                            .try_send(TrayAction::SetConfig(key, !enabled));
-                    }),
-                    ..Default::default()
-                })
-            })
-            .collect();
-
-        items.push(ksni::MenuItem::SubMenu(ksni::menu::SubMenu {
-            label: "Config".to_string(),
-            icon_name: "preferences-system".into(),
-            submenu: config_items,
-            ..Default::default()
-        }));
 
         items.push(ksni::MenuItem::Separator);
 

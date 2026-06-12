@@ -3,9 +3,10 @@
   <id>me.edyan.cardwiretray</id>
 
   <name>Cardwire Tray</name>
-  <summary>Tray application for Cardwire</summary>
+  <summary>GUI frontend for Cardwire</summary>
 
   <releases>
+    <release version="0.5.0" date="2026-06-11" />
     <release version="0.4.0" date="2026-06-05" />
     <release version="0.3.0" date="2026-05-19" />
   </releases>
@@ -14,7 +15,8 @@
   <project_license>MIT</project_license>
 
   <description>
-    <p>An universal tray applet for Cardwire GPU manager.</p>
+    <p>A universal GUI frontend and tray applet for Cardwire GPU manager.</p>
+    <p>This application provides both a status notifier icon in the system tray (for quick mode-switching and status tooltips) and a full GUI window to manage the Cardwire daemon. It supports mode switching, manual GPU blocking, configuring applet behavior, and querying updates.</p>
   </description>
 
   <url type="homepage">https://github.com/JuanDelPueblo/cardwire-tray</url>

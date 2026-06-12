@@ -1,16 +1,28 @@
 mod dbus;
+mod gui;
 mod models;
 mod tray;
 mod utils;
 
 use dbus::get_client;
 use futures_util::StreamExt;
+use gui::run_gui_daemon;
 use ksni::TrayMethods;
-use models::{CardwireClient, CardwireTray, PowerStateChangedArgs, TrayAction};
-use std::{collections::HashSet, time::Duration};
+use models::{AppletConfig, CardwireClient, CardwireTray, PowerStateChangedArgs, TrayAction};
+use std::{
+    collections::HashSet,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
+use tokio::runtime::Builder;
 use tokio::sync::mpsc;
 use tokio::time::MissedTickBehavior;
 use utils::{get_gpus, get_latest_version};
+
+type AppResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 fn spawn_power_state_listener(
     client: CardwireClient,
@@ -38,8 +50,21 @@ fn spawn_power_state_listener(
     });
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> AppResult<()> {
+    let runtime = Builder::new_multi_thread().enable_all().build()?;
+    let open_window_requested = Arc::new(AtomicBool::new(false));
+
+    let (client, applet_config) =
+        runtime.block_on(start_tray(Arc::clone(&open_window_requested)))?;
+
+    run_gui_daemon(client, applet_config, open_window_requested)?;
+
+    Ok(())
+}
+
+async fn start_tray(
+    open_window_requested: Arc<AtomicBool>,
+) -> AppResult<(CardwireClient, Arc<Mutex<AppletConfig>>)> {
     // Retry loop for the Cardwire service.
     let client = get_client().await;
     let mode_proxy = client.mode_proxy().await?;
@@ -49,14 +74,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gpus = get_gpus(&client).await;
     let initial_gpu_ids = gpus.iter().map(|gpu| gpu.id).collect::<Vec<_>>();
 
-    let config = client.config().await.unwrap_or_default();
+    let applet_config = Arc::new(Mutex::new(AppletConfig::load()));
     let latest_version = get_latest_version().await;
 
     let (action_tx, mut action_rx) = mpsc::channel(10);
     let tray = CardwireTray {
         mode: initial_mode,
         gpus,
-        config,
+        applet_config: Arc::clone(&applet_config),
         action_tx,
         current_version: format!("v{}", env!("CARGO_PKG_VERSION").to_string()),
         latest_version,
@@ -100,6 +125,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         TrayAction::SetMode(mode) => {
                             let _ = client_clone.set_mode(mode).await;
                         }
+                        TrayAction::OpenWindow => {
+                            open_window_requested.store(true, Ordering::SeqCst);
+                        }
                         TrayAction::Notify(msg, icon) => {
                             // Using tokio::spawn to ensure any blocking code in show() doesn't block the async task
                             tokio::task::spawn_blocking(move || {
@@ -116,13 +144,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     if let Some(gpu) = tray.gpus.iter_mut().find(|gpu| gpu.id == gpu_id) {
                                         gpu.blocked = block;
                                     }
-                                }).await;
-                            }
-                        }
-                        TrayAction::SetConfig(key, enabled) => {
-                            if client_clone.set_config(key, enabled).await.is_ok() {
-                                let _ = handle_clone.update(|tray: &mut CardwireTray| {
-                                    tray.config.set(key, enabled);
                                 }).await;
                             }
                         }
@@ -160,8 +181,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Keeping the main thread alive
-    loop {
-        std::thread::park();
-    }
+    Ok((client, applet_config))
 }

@@ -30,6 +30,7 @@ install:
 	install -m 644 icons/integrated.svg $(DESTDIR)$(ICONDIR)/me.edyan.cardwiretray-integrated.svg
 	install -m 644 icons/hybrid.svg $(DESTDIR)$(ICONDIR)/me.edyan.cardwiretray-hybrid.svg
 	install -m 644 icons/manual.svg $(DESTDIR)$(ICONDIR)/me.edyan.cardwiretray-manual.svg
+	install -m 644 icons/smart.svg $(DESTDIR)$(ICONDIR)/me.edyan.cardwiretray-smart.svg
 
 uninstall:
 	rm -f $(BINDIR)/cardwire-tray
@@ -39,3 +40,4 @@ uninstall:
 	rm -f $(ICONDIR)/me.edyan.cardwiretray-integrated.svg
 	rm -f $(ICONDIR)/me.edyan.cardwiretray-hybrid.svg
 	rm -f $(ICONDIR)/me.edyan.cardwiretray-manual.svg
+	rm -f $(ICONDIR)/me.edyan.cardwiretray-smart.svg
