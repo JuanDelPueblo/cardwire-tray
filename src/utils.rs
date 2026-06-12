@@ -44,19 +44,28 @@ pub async fn get_gpus(client: &CardwireClient) -> Vec<GpuInfo> {
             continue;
         };
 
-        if let Ok((name, _, _, _, is_default, _, _)) = gpu.get_device().await {
+        if let Ok((name, pci, render, card, is_default, is_nvidia, nvidia_minor)) =
+            gpu.get_device().await
+        {
             let blocked = gpu.block().await.unwrap_or(false);
             let power_state = gpu
                 .power_state()
                 .await
                 .unwrap_or_else(|_| "Unknown".to_string());
+            let lsof = gpu.lsof().await.unwrap_or_default();
 
             gpus.push(GpuInfo {
                 id,
                 name,
+                pci,
+                render,
+                card,
                 is_default,
+                is_nvidia,
+                nvidia_minor,
                 blocked,
                 power_state,
+                lsof,
             });
         }
     }
