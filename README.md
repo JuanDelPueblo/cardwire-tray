@@ -1,3 +1,7 @@
+## Note
+
+Starting with v0.11.0, [Cardwire](https://github.com/OpenGamingCollective/cardwire) now includes both a GUI and a tray applet derived from this project. Because of this, Cardwire Tray is now archived and will no longer be maintained.
+
 # Cardwire Tray
 
 <img height="500" alt="image" src="https://github.com/user-attachments/assets/1496138f-e871-46b6-8903-2ee7e1057eb9" />
